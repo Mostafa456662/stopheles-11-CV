@@ -1,0 +1,8 @@
+h(.;ψ)
+let dim(X_s^(i)) = (W,H,C)
+dim(M^(i))=(n,W,H,1)
+normalize image shapes
+augmentation pipeline
+unwrapping
+ratios of zeroes of ones
+kernel regulizer
