@@ -1,0 +1,1 @@
+combined_mask = np.zeros_like(image)
