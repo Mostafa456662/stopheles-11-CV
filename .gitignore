@@ -1,4 +1,2 @@
 .venv/
-dbs/segmentor_db/cooked/img0.npz
-dbs/segmentor_db/cooked/img1.npz
-dbs/segmentor_db/cooked/img2.npz
+dbs/segmentor_db/cooked/*.npz
