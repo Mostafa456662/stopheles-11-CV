@@ -1,4 +1,3 @@
-# global imports
 import os
 import cv2
 import numpy as np
@@ -6,25 +5,29 @@ import tensorflow as tf
 from keras import layers
 from tensorflow import keras as k
 
-
-### local imports ###
+#Local Imports
+from Siamese_helper import PredictionCallback
 from data.siamese_data_pipeline import data_pipeline as dp
+
+
+
 
 
 class SiameseModel(k.Model):
     def __init__(self, img_shape: tuple[int, ...], embedding_model: k.Model):
         super(SiameseModel, self).__init__()
         self.f = embedding_model
+        self.f.trainable = False  
         self.img_shape = img_shape
-        self.g = tf.keras.Sequential(
-            [
-                layers.Flatten(),
-                layers.Dense(128, activation="swish", kernel_regularizer="l2"),
-                layers.Dropout(0.5),
-                layers.BatchNormalization(),
-                layers.Dense(1, activation="sigmoid", kernel_regularizer="l2"),
-            ]
-        )
+    
+    
+        self.g = tf.keras.Sequential([
+            layers.Flatten(),
+            layers.Dense(128, activation="relu", kernel_regularizer="l2"),
+            layers.Dropout(0.5),
+            layers.BatchNormalization(),
+            layers.Dense(1, activation="sigmoid", kernel_regularizer="l2"),
+        ])
 
     def call(self, X: np.ndarray) -> np.ndarray:
         X1, X2 = X[:, 0], X[:, 1]
@@ -68,7 +71,11 @@ def compile_model(model: SiameseModel, lr_schedule) -> SiameseModel:
     model.compile(
         optimizer=k.optimizers.Adam(learning_rate=lr_schedule),
         loss="binary_crossentropy",
-        metrics=["accuracy", "precision", "recall"],
+        metrics=[
+        k.metrics.BinaryAccuracy(), 
+        # k.metrics.Precision(), 
+        # k.metrics.Recall()
+    ]
     )
     return model
 
@@ -81,6 +88,7 @@ def train(
     val_data=None,
     batch_size: int = 32,
     callbacks=None,
+    show_predictions=True,
 ) -> int:
     """
     Train the Siamese model
@@ -100,14 +108,22 @@ def train(
             ),
             k.callbacks.ReduceLROnPlateau(factor=0.5, patience=5, min_lr=1e-7),
             k.callbacks.ModelCheckpoint(
-                "./src/models/model.h5", save_best_only=True, 
+                "./src/models/model.keras", save_best_only=True, 
             ),
         ]
+    if show_predictions:
+        pred_callback = PredictionCallback(X_train, y_train, sample_size=15)
+        callbacks.append(pred_callback)
+    class_weight = {
+            0: 1,     
+            1: 5     
+    }
 
     model.fit(
         X_train,
         y_train,
         validation_data=val_data,
+        class_weight = class_weight,
         epochs=epochs,
         batch_size=batch_size,
         callbacks=callbacks,
@@ -139,10 +155,10 @@ if __name__ == "__main__":
     # Create model
     img_shape = (224, 224, 3)
     model = create_model(img_shape)
-    epochs = 100
+    epochs = 10
     first_phase_epochs = int(0.3 * epochs)
     second_phase_epochs = int(0.7 * epochs)
-    # Compile model with frozen embeddings (embeddings are frozen by default)
+
     model = compile_model(
         model,
         lr_schedule=k.optimizers.schedules.ExponentialDecay(
@@ -159,6 +175,13 @@ if __name__ == "__main__":
     # Step 2: Unfreeze and train the full model end-to-end
     model.f.trainable = True
 
+    model = compile_model(
+        model,
+        lr_schedule=k.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate=1e-5, decay_steps=10000, decay_rate=0.9
+        ),
+    )
+    
     train(
         model,
         X_train,

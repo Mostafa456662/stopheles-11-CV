@@ -1,2 +1,8 @@
 .venv/
 dbs/segmentor_db/cooked/*.npz
+dbs/segmentor_db/raw/*.png
+dbs/comparator_db/raw/N/*.jpg
+dbs/comparator_db/raw/P/*.jpg
+src/models/model.keras
+src/models/mobile_sam.pt
+
