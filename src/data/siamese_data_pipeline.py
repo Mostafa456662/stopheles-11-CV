@@ -25,7 +25,9 @@ def load_images(path: str, X_shape: tuple) -> np.ndarray:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         
-        image = cv2.resize(image, X_shape[:2]) #  
+        image = cv2.resize(image, X_shape[:2]) #
+
+        
         
         # Normalize to [0,1]
         image = image / 255.0
@@ -88,7 +90,7 @@ def augment_data(
    
 
 
-def generate_image_pairs(X: tuple[np.ndarray, np.ndarray]):
+def generate_image_pairs(X: tuple[np.ndarray, np.ndarray])->tuple[np.ndarray, np.ndarray]:
     n_N = X[0].shape[0]
     n_P = X[1].shape[0]
 
@@ -102,14 +104,15 @@ def generate_image_pairs(X: tuple[np.ndarray, np.ndarray]):
     y_N: np.ndarray = np.zeros(X_N_pairs.shape[0])
 
     ds_X: np.ndarray = np.vstack([X_P_pairs, X_N_pairs])
-    ds_Y: np.ndarray = np.hstack([y_P, y_N])
+    ds_Y: np.ndarray = np.hstack([y_P, y_N]) 
+   
 
     return ds_X, ds_Y
 
 
 def data_pipeline(
     path: str, X_shape: tuple, n: int, train_ratio: float, P_to_N_ratio: float
-):
+)->tuple[np.ndarray, np.ndarray]:
     X = load_data(path, X_shape)
 
     X = augment_data(X, n)
@@ -144,7 +147,7 @@ def main() -> int:
     X_shape = (224, 224, 3)
     train_ratio = 0.8
     n = 4
-    P_to_N_ratio = 0.2
+    P_to_N_ratio = 0.4
 
     
     (X_train, y_train), (X_test, y_test) = data_pipeline(
